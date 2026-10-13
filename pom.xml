@@ -11,6 +11,7 @@
     <groupId>com.kanapa4.shop</groupId>
     <artifactId>shop-order-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
     <name>shop-order-service</name>
     <description>shop-order-service</description>
     <url/>
@@ -20,6 +21,12 @@
     <developers>
         <developer/>
     </developers>
+    <modules>
+        <module>model</module>
+        <module>domain</module>
+        <module>adapter</module>
+        <module>public</module>
+    </modules>
     <scm>
         <connection/>
         <developerConnection/>
