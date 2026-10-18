@@ -17,7 +17,7 @@
     <name>shop-order-service</name>
 
     <modules>
-        <module>public</module>
+        <module>pub</module>
         <module>model</module>
         <module>domain</module>
         <module>adapter</module>

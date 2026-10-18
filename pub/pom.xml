@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>order-public</artifactId>
-    <name>public</name>
+    <name>pub</name>
 
     <dependencies>
         <dependency>
