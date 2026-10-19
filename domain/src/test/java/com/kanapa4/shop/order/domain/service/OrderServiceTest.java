@@ -44,11 +44,7 @@ import static com.kanapa4.shop.order.domain.testdata.OrderFixtures.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
@@ -87,7 +83,8 @@ class OrderServiceTest {
         when(orderMapper.toDeliveryMethod(any())).thenReturn(DeliveryMethod.COURIER);
         when(orderMapper.toPaymentMethod(any())).thenReturn(PaymentMethod.CARD);
         when(orderMapper.toCustomer(any())).thenReturn(customer());
-        when(orderMapper.toAddress(any())).thenReturn(address());
+        when(orderMapper.toAddress(addressRequest())).thenReturn(address());
+        lenient().when(orderMapper.toAddress(null)).thenReturn(null);
     }
 
     private void givenOrder(Order order) {
@@ -143,8 +140,9 @@ class OrderServiceTest {
 
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
         verify(orderRepository).save(orderCaptor.capture());
-        assertThat(orderCaptor.getValue().getBillingAddress()).isEqualTo(orderCaptor.getValue().getShippingAddress());
-        verify(orderMapper, times(1)).toAddress(any());
+        assertThat(orderCaptor.getValue().getBillingAddress())
+                .isNotNull()
+                .isEqualTo(orderCaptor.getValue().getShippingAddress());
     }
 
     @Test

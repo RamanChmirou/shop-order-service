@@ -44,5 +44,6 @@ public class OutboxEventEntity {
     private OutboxStatus status = OutboxStatus.PENDING;
 
     @CreationTimestamp
+    @Column(updatable = false)
     private Instant createdAt;
 }

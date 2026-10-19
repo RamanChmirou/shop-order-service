@@ -1,1 +1,13 @@
-databaseChangeLog: []
+databaseChangeLog:
+  - include:
+      file: changes/001-create-orders.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/002-create-order-items.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/003-create-invoices.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/004-create-outbox-events.yaml
+      relativeToChangelogFile: true

@@ -8,6 +8,7 @@ import lombok.Getter;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Getter
@@ -31,6 +32,7 @@ public class Order {
     private final String currency;
     private final Invoice invoice;
     private final Instant createdAt;
+    private Long version;
 
     public void pay() {
         changeStatus(OrderStatus.NEW, OrderStatus.PAID, "pay");
@@ -59,5 +61,26 @@ public class Order {
             throw new InvalidOrderStateException(status, action);
         }
         status = target;
+    }
+
+    public static Order create(String orderNumber, UUID userId, Customer customer,
+                               DeliveryMethod deliveryMethod, PaymentMethod paymentMethod,
+                               Address shippingAddress, Address billingAddress,
+                               CartSnapshot cart, BigDecimal deliveryCost) {
+        return Order.builder()
+                .orderNumber(orderNumber)
+                .userId(userId)
+                .customer(customer)
+                .deliveryMethod(deliveryMethod)
+                .paymentMethod(paymentMethod)
+                .shippingAddress(shippingAddress)
+                .billingAddress(Objects.requireNonNullElse(billingAddress, shippingAddress))
+                .items(cart.items())
+                .itemsTotal(cart.totalAmount())
+                .deliveryCost(deliveryCost)
+                .grandTotal(cart.totalAmount().add(deliveryCost))
+                .currency(cart.currency())
+                .invoice(Invoice.builder().build())
+                .build();
     }
 }

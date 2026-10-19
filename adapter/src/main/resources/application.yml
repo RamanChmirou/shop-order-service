@@ -10,7 +10,10 @@ spring:
     password: shop
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_batch_fetch_size: 50
     open-in-view: false
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
