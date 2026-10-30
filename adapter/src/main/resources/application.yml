@@ -28,6 +28,14 @@ spring:
             connect-timeout: 2000
             read-timeout: 5000
             logger-level: full
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
 
 resilience4j:
   circuitbreaker:
@@ -56,3 +64,12 @@ management:
 logging:
   level:
     com.kanapa4.shop.order: DEBUG
+
+outbox:
+  topic: order.placed
+  relay-delay: 2000
+  batch-size: 50
+
+payment:
+  gateway:
+    declined-methods: TRANSFER

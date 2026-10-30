@@ -1,10 +1,6 @@
 package com.kanapa4.shop.order.domain.service;
 
-import com.kanapa4.shop.order.domain.port.CartPort;
-import com.kanapa4.shop.order.domain.port.InvoicePort;
-import com.kanapa4.shop.order.domain.port.OrderEventPublisherPort;
-import com.kanapa4.shop.order.domain.port.OrderMapperPort;
-import com.kanapa4.shop.order.domain.port.OrderRepositoryPort;
+import com.kanapa4.shop.order.domain.port.*;
 import com.kanapa4.shop.order.domain.validator.CheckoutValidator;
 import com.kanapa4.shop.order.model.DeliveryMethod;
 import com.kanapa4.shop.order.model.Invoice;
@@ -12,13 +8,7 @@ import com.kanapa4.shop.order.model.InvoiceStatus;
 import com.kanapa4.shop.order.model.Order;
 import com.kanapa4.shop.order.model.OrderStatus;
 import com.kanapa4.shop.order.model.PaymentMethod;
-import com.kanapa4.shop.order.model.exception.CartServiceUnavailableException;
-import com.kanapa4.shop.order.model.exception.EmptyCartException;
-import com.kanapa4.shop.order.model.exception.InvalidOrderStateException;
-import com.kanapa4.shop.order.model.exception.InvoiceAlreadyIssuedException;
-import com.kanapa4.shop.order.model.exception.InvoiceServiceUnavailableException;
-import com.kanapa4.shop.order.model.exception.OrderDoesNotExistException;
-import com.kanapa4.shop.order.model.exception.PriceChangedException;
+import com.kanapa4.shop.order.model.exception.*;
 import com.kanapa4.shop.order.pub.event.OrderPlacedEvent;
 import com.kanapa4.shop.order.pub.page.Page;
 import com.kanapa4.shop.order.pub.page.Pageable;
@@ -29,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -39,6 +30,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import static com.kanapa4.shop.order.domain.testdata.OrderFixtures.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -68,6 +60,11 @@ class OrderServiceTest {
 
     @Mock
     private OrderResponse response;
+    @Mock
+    PaymentPort paymentPort;
+
+    @Mock
+    TransactionPort transactionPort;
 
     private OrderService orderService;
 
@@ -76,7 +73,7 @@ class OrderServiceTest {
         OrderFactory orderFactory = new OrderFactory(
                 orderMapper, new OrderNumberGenerator(CLOCK), new DeliveryCostCalculator());
         orderService = new OrderService(orderRepository, orderMapper, cartPort, invoicePort,
-                eventPublisher, new CheckoutValidator(), orderFactory, CLOCK);
+                eventPublisher, new CheckoutValidator(), orderFactory, paymentPort, transactionPort, CLOCK);
     }
 
     private void givenMapperConvertsRequest() {
@@ -96,8 +93,16 @@ class OrderServiceTest {
         when(orderMapper.toResponse(order)).thenReturn(response);
     }
 
+    @SuppressWarnings("unchecked")
+    private void givenTransactionRunsAction() {
+        when(transactionPort.execute(any())).thenAnswer(
+                invocation -> ((Supplier<?>) invocation.getArgument(0)).get());
+    }
+
     @Test
     void checkout_ValidRequest_SavesNewOrderAndPublishesEvent() {
+        givenMapperConvertsRequest();
+        givenTransactionRunsAction();
         when(cartPort.repriceCart(USER_ID)).thenReturn(cartSnapshot());
         givenMapperConvertsRequest();
         Order saved = order(OrderStatus.NEW);
@@ -130,6 +135,8 @@ class OrderServiceTest {
 
     @Test
     void checkout_NoBillingAddress_UsesShippingAddressForBilling() {
+        givenMapperConvertsRequest();
+        givenTransactionRunsAction();
         when(cartPort.repriceCart(USER_ID)).thenReturn(cartSnapshot());
         givenMapperConvertsRequest();
         Order saved = order(OrderStatus.NEW);
@@ -213,7 +220,7 @@ class OrderServiceTest {
 
         assertThatThrownBy(() -> orderService.pay(USER_ID, ORDER_ID))
                 .isInstanceOf(InvalidOrderStateException.class);
-        verifyNoInteractions(invoicePort);
+        verifyNoInteractions(invoicePort, paymentPort);
         verify(orderRepository, never()).save(any());
     }
 
@@ -331,5 +338,34 @@ class OrderServiceTest {
 
         assertThat(result.content()).containsExactly(summary);
         assertThat(result.totalElements()).isEqualTo(1);
+    }
+
+    @Test
+    void pay_PaymentDeclined_DoesNotSaveAndDoesNotIssueInvoice() {
+        Order order = order(OrderStatus.NEW);
+        when(orderRepository.findByIdAndUserId(order.getId(), USER_ID)).thenReturn(Optional.of(order));
+        doThrow(new PaymentDeclinedException(order.getOrderNumber(), "TRANSFER"))
+                .when(paymentPort).charge(order);
+
+        assertThatThrownBy(() -> orderService.pay(USER_ID, order.getId()))
+                .isInstanceOf(PaymentDeclinedException.class);
+
+        verify(orderRepository, never()).save(any());
+        verifyNoInteractions(invoicePort);
+    }
+
+    @Test
+    void pay_Success_ChargesBeforeIssuingInvoice() {
+        Order order = order(OrderStatus.NEW);
+        when(orderRepository.findByIdAndUserId(order.getId(), USER_ID)).thenReturn(Optional.of(order));
+        when(invoicePort.issue(order)).thenReturn(issuedInvoice());
+        when(orderRepository.save(order)).thenReturn(order);
+
+        orderService.pay(USER_ID, order.getId());
+
+        InOrder inOrder = inOrder(paymentPort, invoicePort, orderRepository);
+        inOrder.verify(paymentPort).charge(order);
+        inOrder.verify(invoicePort).issue(order);
+        inOrder.verify(orderRepository).save(order);
     }
 }

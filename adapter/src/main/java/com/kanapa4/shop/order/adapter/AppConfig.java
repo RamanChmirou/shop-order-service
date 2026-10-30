@@ -1,21 +1,21 @@
 package com.kanapa4.shop.order.adapter;
 
-import com.kanapa4.shop.order.domain.port.CartPort;
-import com.kanapa4.shop.order.domain.port.InvoicePort;
-import com.kanapa4.shop.order.domain.port.OrderEventPublisherPort;
-import com.kanapa4.shop.order.domain.port.OrderMapperPort;
-import com.kanapa4.shop.order.domain.port.OrderRepositoryPort;
+import com.kanapa4.shop.order.domain.port.*;
 import com.kanapa4.shop.order.domain.service.DeliveryCostCalculator;
 import com.kanapa4.shop.order.domain.service.OrderFactory;
 import com.kanapa4.shop.order.domain.service.OrderNumberGenerator;
 import com.kanapa4.shop.order.domain.service.OrderService;
 import com.kanapa4.shop.order.domain.validator.CheckoutValidator;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.time.Clock;
 
 @Configuration
+@EnableScheduling
+@EnableConfigurationProperties({OutboxProperties.class, PaymentGatewayProperties.class})
 public class AppConfig {
 
     @Bean
@@ -53,8 +53,10 @@ public class AppConfig {
                                      OrderEventPublisherPort eventPublisher,
                                      CheckoutValidator checkoutValidator,
                                      OrderFactory orderFactory,
+                                     PaymentPort paymentPort,
+                                     TransactionPort transactionPort,
                                      Clock clock) {
         return new OrderService(orderRepository, orderMapper, cartPort, invoicePort,
-                eventPublisher, checkoutValidator, orderFactory, clock);
+                eventPublisher, checkoutValidator, orderFactory, paymentPort, transactionPort, clock);
     }
 }

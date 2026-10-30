@@ -1,15 +1,6 @@
 package com.kanapa4.shop.order.adapter;
 
-import com.kanapa4.shop.order.model.exception.CartServiceUnavailableException;
-import com.kanapa4.shop.order.model.exception.EmptyCartException;
-import com.kanapa4.shop.order.model.exception.InvalidOrderDataException;
-import com.kanapa4.shop.order.model.exception.InvalidOrderStateException;
-import com.kanapa4.shop.order.model.exception.InvoiceAlreadyIssuedException;
-import com.kanapa4.shop.order.model.exception.InvoiceServiceUnavailableException;
-import com.kanapa4.shop.order.model.exception.OrderConcurrentModificationException;
-import com.kanapa4.shop.order.model.exception.OrderDoesNotExistException;
-import com.kanapa4.shop.order.model.exception.OrderException;
-import com.kanapa4.shop.order.model.exception.PriceChangedException;
+import com.kanapa4.shop.order.model.exception.*;
 import com.kanapa4.shop.order.pub.response.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -60,6 +51,7 @@ public class GlobalExceptionHandler {
             case OrderConcurrentModificationException ex -> HttpStatus.CONFLICT;
             case CartServiceUnavailableException ex -> HttpStatus.SERVICE_UNAVAILABLE;
             case InvoiceServiceUnavailableException ex -> HttpStatus.SERVICE_UNAVAILABLE;
+            case PaymentDeclinedException ex -> HttpStatus.PAYMENT_REQUIRED;
             default -> HttpStatus.INTERNAL_SERVER_ERROR;
         };
     }

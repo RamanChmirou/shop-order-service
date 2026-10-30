@@ -1,10 +1,6 @@
 package com.kanapa4.shop.order.domain.service;
 
-import com.kanapa4.shop.order.domain.port.CartPort;
-import com.kanapa4.shop.order.domain.port.InvoicePort;
-import com.kanapa4.shop.order.domain.port.OrderEventPublisherPort;
-import com.kanapa4.shop.order.domain.port.OrderMapperPort;
-import com.kanapa4.shop.order.domain.port.OrderRepositoryPort;
+import com.kanapa4.shop.order.domain.port.*;
 import com.kanapa4.shop.order.domain.validator.CheckoutValidator;
 import com.kanapa4.shop.order.model.CartSnapshot;
 import com.kanapa4.shop.order.model.Invoice;
@@ -36,14 +32,16 @@ public class OrderService {
     private final OrderEventPublisherPort eventPublisher;
     private final CheckoutValidator checkoutValidator;
     private final OrderFactory orderFactory;
+    private final PaymentPort paymentPort;
+    private final TransactionPort transactionPort;
     private final Clock clock;
 
     public OrderResponse checkout(UUID userId, CheckoutRequest request) {
         log.info("Checkout of user {}", userId);
         CartSnapshot cart = cartPort.repriceCart(userId);
         checkoutValidator.validate(userId, request, cart);
-        Order saved = orderRepository.save(orderFactory.create(userId, request, cart));
-        eventPublisher.publishOrderPlaced(placedEvent(saved, cart.id()));
+        Order order = orderFactory.create(userId, request, cart);
+        Order saved = transactionPort.execute(() -> saveWithEvent(order, cart.id()));
         log.info("Order {} created for user {}", saved.getOrderNumber(), userId);
         return orderMapper.toResponse(saved);
     }
@@ -62,6 +60,7 @@ public class OrderService {
         log.info("Payment of order {} by user {}", orderId, userId);
         Order order = findOrThrow(userId, orderId);
         order.pay();
+        paymentPort.charge(order);
         issueInvoice(order);
         return orderMapper.toResponse(orderRepository.save(order));
     }
@@ -88,6 +87,11 @@ public class OrderService {
         return orderMapper.toResponse(orderRepository.save(order));
     }
 
+    private Order saveWithEvent(Order order, UUID cartId) {
+        Order saved = orderRepository.save(order);
+        eventPublisher.publishOrderPlaced(placedEvent(saved, cartId));
+        return saved;
+    }
     private Order findOrThrow(UUID userId, UUID orderId) {
         return orderRepository.findByIdAndUserId(orderId, userId)
                 .orElseThrow(() -> new OrderDoesNotExistException(orderId));
