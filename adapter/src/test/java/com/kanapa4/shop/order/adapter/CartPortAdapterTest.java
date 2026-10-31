@@ -62,6 +62,7 @@ class CartPortAdapterTest {
 
         CartSnapshot snapshot = cartPort.repriceCart(USER_ID);
 
+        assertThat(snapshot.items().getFirst().id()).isNull();
         assertThat(snapshot.userId()).isEqualTo(USER_ID);
         assertThat(snapshot.items()).hasSize(1);
         assertThat(snapshot.totalAmount()).isEqualByComparingTo("200.00");

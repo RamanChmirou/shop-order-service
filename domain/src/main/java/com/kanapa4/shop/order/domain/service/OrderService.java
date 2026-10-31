@@ -6,7 +6,9 @@ import com.kanapa4.shop.order.model.CartSnapshot;
 import com.kanapa4.shop.order.model.Invoice;
 import com.kanapa4.shop.order.model.IssuedInvoice;
 import com.kanapa4.shop.order.model.Order;
+import com.kanapa4.shop.order.model.exception.InvalidOrderStateException;
 import com.kanapa4.shop.order.model.exception.InvoiceServiceUnavailableException;
+import com.kanapa4.shop.order.model.exception.OrderConcurrentModificationException;
 import com.kanapa4.shop.order.model.exception.OrderDoesNotExistException;
 import com.kanapa4.shop.order.pub.event.OrderPlacedEvent;
 import com.kanapa4.shop.order.pub.page.Page;
@@ -18,7 +20,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -85,6 +89,23 @@ public class OrderService {
                 .orElseThrow(() -> new OrderDoesNotExistException(orderId));
         order.ship();
         return orderMapper.toResponse(orderRepository.save(order));
+    }
+
+    public int cancelUnpaidOrders(Duration maxAge, int batchSize) {
+        Instant threshold = Instant.now(clock).minus(maxAge);
+        List<Order> expired = orderRepository.findUnpaidCreatedBefore(threshold, batchSize);
+        expired.forEach(this::cancelExpired);
+        return expired.size();
+    }
+
+    private void cancelExpired(Order order) {
+        try {
+            order.cancel();
+            orderRepository.save(order);
+            log.info("Unpaid order {} cancelled by timeout", order.getOrderNumber());
+        } catch (OrderConcurrentModificationException | InvalidOrderStateException e) {
+            log.warn("Order {} skipped by cleanup: {}", order.getOrderNumber(), e.getMessage());
+        }
     }
 
     private Order saveWithEvent(Order order, UUID cartId) {

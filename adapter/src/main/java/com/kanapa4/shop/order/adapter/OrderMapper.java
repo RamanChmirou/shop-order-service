@@ -3,8 +3,10 @@ package com.kanapa4.shop.order.adapter;
 import com.kanapa4.shop.order.model.*;
 import com.kanapa4.shop.order.pub.request.AddressRequest;
 import com.kanapa4.shop.order.pub.request.CustomerRequest;
+import com.kanapa4.shop.order.pub.response.OrderItemResponse;
 import com.kanapa4.shop.order.pub.response.OrderResponse;
 import com.kanapa4.shop.order.pub.response.OrderSummaryResponse;
+import com.kanapa4.shop.order.pub.response.PriceResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -42,4 +44,9 @@ public interface OrderMapper {
     DeliveryMethod toDeliveryMethod(com.kanapa4.shop.order.pub.type.DeliveryMethod method);
 
     PaymentMethod toPaymentMethod(com.kanapa4.shop.order.pub.type.PaymentMethod method);
+
+    @Mapping(target = "lineTotal", expression = "java(toPriceResponse(item.lineTotal()))")
+    OrderItemResponse toItemResponse(OrderItem item);
+
+    PriceResponse toPriceResponse(Price price);
 }

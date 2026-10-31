@@ -25,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -367,5 +368,39 @@ class OrderServiceTest {
         inOrder.verify(paymentPort).charge(order);
         inOrder.verify(invoicePort).issue(order);
         inOrder.verify(orderRepository).save(order);
+    }
+
+    @Test
+    void cancelUnpaidOrders_ExpiredOrders_CancelsAndSavesEach() {
+        Order first = order(OrderStatus.NEW);
+        Order second = order(OrderStatus.NEW);
+        Instant threshold = CLOCK.instant().minus(Duration.ofHours(24));
+        when(orderRepository.findUnpaidCreatedBefore(threshold, 100)).thenReturn(List.of(first, second));
+
+        int cancelled = orderService.cancelUnpaidOrders(Duration.ofHours(24), 100);
+
+        assertThat(cancelled).isEqualTo(2);
+        assertThat(first.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(second.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+        verify(orderRepository, times(2)).save(any(Order.class));
+    }
+
+    @Test
+    void cancelUnpaidOrders_ConcurrentlyPaidOrder_IsSkipped() {
+        Order raced = order(OrderStatus.NEW);
+        when(orderRepository.findUnpaidCreatedBefore(any(), anyInt())).thenReturn(List.of(raced));
+        when(orderRepository.save(raced)).thenThrow(new OrderConcurrentModificationException(ORDER_ID));
+
+        int result = orderService.cancelUnpaidOrders(Duration.ofHours(24), 100);
+
+        assertThat(result).isEqualTo(1);
+    }
+
+    @Test
+    void cancelUnpaidOrders_NothingExpired_DoesNothing() {
+        when(orderRepository.findUnpaidCreatedBefore(any(), anyInt())).thenReturn(List.of());
+
+        assertThat(orderService.cancelUnpaidOrders(Duration.ofHours(24), 100)).isZero();
+        verify(orderRepository, never()).save(any());
     }
 }

@@ -73,3 +73,9 @@ outbox:
 payment:
   gateway:
     declined-methods: TRANSFER
+
+orders:
+  cancel-unpaid:
+    max-age: 24h
+    batch-size: 100
+    cron: "0 */10 * * * *"

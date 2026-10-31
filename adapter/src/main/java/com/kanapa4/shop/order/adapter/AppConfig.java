@@ -15,7 +15,7 @@ import java.time.Clock;
 
 @Configuration
 @EnableScheduling
-@EnableConfigurationProperties({OutboxProperties.class, PaymentGatewayProperties.class})
+@EnableConfigurationProperties({OutboxProperties.class, PaymentGatewayProperties.class, UnpaidOrdersProperties.class})
 public class AppConfig {
 
     @Bean

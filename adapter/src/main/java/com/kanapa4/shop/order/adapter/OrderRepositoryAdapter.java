@@ -2,15 +2,19 @@ package com.kanapa4.shop.order.adapter;
 
 import com.kanapa4.shop.order.domain.port.OrderRepositoryPort;
 import com.kanapa4.shop.order.model.Order;
+import com.kanapa4.shop.order.model.OrderStatus;
 import com.kanapa4.shop.order.model.exception.OrderConcurrentModificationException;
 import com.kanapa4.shop.order.pub.page.Page;
 import com.kanapa4.shop.order.pub.page.Pageable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -54,6 +58,14 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
         log.debug("Loading orders of user {}, pageable={}", userId, pageable);
         var springPage = orderRepository.findAllByUserId(userId, PageMapper.toSpringPageable(pageable));
         return PageMapper.toPojoPage(springPage, orderMapper::toPojo);
+    }
+
+    @Override
+    public List<Order> findUnpaidCreatedBefore(Instant threshold, int limit) {
+        return orderRepository.findByStatusAndCreatedAtBefore(OrderStatus.NEW, threshold, Limit.of(limit))
+                .stream()
+                .map(orderMapper::toPojo)
+                .toList();
     }
 
     private void bindRelations(OrderEntity entity) {
