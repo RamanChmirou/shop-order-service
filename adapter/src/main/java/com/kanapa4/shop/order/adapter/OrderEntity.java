@@ -3,20 +3,7 @@ package com.kanapa4.shop.order.adapter;
 import com.kanapa4.shop.order.model.DeliveryMethod;
 import com.kanapa4.shop.order.model.OrderStatus;
 import com.kanapa4.shop.order.model.PaymentMethod;
-import jakarta.persistence.AttributeOverride;
-import jakarta.persistence.AttributeOverrides;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Embedded;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
-import jakarta.persistence.Version;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -82,16 +69,15 @@ public class OrderEntity {
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal itemsTotal;
 
-    @Embedded
-    @AttributeOverrides({
-            @AttributeOverride(name = "amount",
-                    column = @Column(name = "delivery_cost", nullable = false, precision = 19, scale = 2)),
-            @AttributeOverride(name = "currency",
-                    column = @Column(name = "delivery_currency", nullable = false, length = 3)),
-            @AttributeOverride(name = "vatRate",
-                    column = @Column(name = "delivery_vat_rate", nullable = false, length = 16))
-    })
-    private PriceEmbeddable deliveryCost;
+    @Column(nullable = false, precision = 19, scale = 2)
+    private BigDecimal deliveryCost;
+
+    @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private InvoiceEntity invoice;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private Instant createdAt;
 
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal grandTotal;
@@ -104,9 +90,6 @@ public class OrderEntity {
 
     @Version
     private Long version;
-
-    @CreationTimestamp
-    private Instant createdAt;
 
     @UpdateTimestamp
     private Instant updatedAt;

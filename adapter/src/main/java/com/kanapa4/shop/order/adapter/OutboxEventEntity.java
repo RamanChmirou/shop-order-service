@@ -44,5 +44,18 @@ public class OutboxEventEntity {
     private OutboxStatus status = OutboxStatus.PENDING;
 
     @CreationTimestamp
+    @Column(updatable = false)
     private Instant createdAt;
+
+    public static OutboxEventEntity pending(UUID aggregateId, String type, String payload) {
+        OutboxEventEntity entity = new OutboxEventEntity();
+        entity.aggregateId = aggregateId;
+        entity.type = type;
+        entity.payload = payload;
+        return entity;
+    }
+
+    public void markSent() {
+        this.status = OutboxStatus.SENT;
+    }
 }

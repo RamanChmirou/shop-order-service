@@ -47,10 +47,14 @@ public class InvoiceEntity {
 
     private int attempts;
 
+    @Column(length = 1000)
     private String lastError;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private Instant createdAt;
 
     private Instant issuedAt;
 
-    @CreationTimestamp
-    private Instant createdAt;
+
 }
