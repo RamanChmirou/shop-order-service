@@ -1,0 +1,38 @@
+{
+  "cart": {
+    "id": "%s",
+    "userId": "%s",
+    "status": "ACTIVE",
+    "items": [
+      {
+        "id": "%s",
+        "productId": "%s",
+        "productName": "Laptop Pro 15",
+        "unitPrice": {
+          "amount": 5199.00,
+          "currency": "PLN",
+          "vatRate": "VAT_23"
+        },
+        "quantity": %d,
+        "lineTotal": {
+          "amount": 10398.00,
+          "currency": "PLN",
+          "vatRate": "VAT_23"
+        },
+        "selectedOptions": [
+          {
+            "groupCode": "RAM",
+            "valueCode": "RAM_32",
+            "valueLabel": "32 GB",
+            "priceDelta": 400.00
+          }
+        ]
+      }
+    ],
+    "itemCount": %d,
+    "totalAmount": 10398.00,
+    "currency": "PLN"
+  },
+  "changed": false,
+  "changes": []
+}

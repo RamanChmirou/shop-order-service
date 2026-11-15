@@ -27,11 +27,7 @@ public class OutboxRelay {
     public void relay() {
         List<OutboxEventEntity> pending = outboxRepository.findByStatusOrderByCreatedAtAsc(
                 OutboxStatus.PENDING, Limit.of(properties.batchSize()));
-        for (OutboxEventEntity event : pending) {
-            if (!send(event)) {
-                return;
-            }
-        }
+        pending.stream().allMatch(this::send);
     }
 
     private boolean send(OutboxEventEntity event) {
