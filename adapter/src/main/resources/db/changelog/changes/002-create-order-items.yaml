@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-order-items
+      author: order-service
+      changes:
+        - createTable:
+            tableName: order_items
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column:
+                  name: order_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_order_items_order
+                    references: orders(id)
+                    deleteCascade: true
+              - column: { name: product_id, type: uuid, constraints: { nullable: false } }
+              - column: { name: product_name, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: unit_price, type: "numeric(19,2)", constraints: { nullable: false } }
+              - column: { name: currency, type: varchar(3), constraints: { nullable: false } }
+              - column: { name: vat_rate, type: varchar(16), constraints: { nullable: false } }
+              - column: { name: quantity, type: integer, constraints: { nullable: false } }
+              - column: { name: selected_options, type: jsonb }
+        - createIndex:
+            tableName: order_items
+            indexName: idx_order_items_order
+            columns:
+              - column: { name: order_id }

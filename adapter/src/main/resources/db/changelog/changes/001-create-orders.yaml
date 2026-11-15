@@ -1,0 +1,39 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-orders
+      author: order-service
+      changes:
+        - createTable:
+            tableName: orders
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: order_number, type: varchar(32), constraints: { nullable: false, unique: true, uniqueConstraintName: uq_orders_order_number } }
+              - column: { name: user_id, type: uuid, constraints: { nullable: false } }
+              - column: { name: status, type: varchar(16), constraints: { nullable: false } }
+              - column: { name: delivery_method, type: varchar(32), constraints: { nullable: false } }
+              - column: { name: payment_method, type: varchar(32), constraints: { nullable: false } }
+              - column: { name: customer_first_name, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: customer_last_name, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: customer_email, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: customer_phone, type: varchar(255) }
+              - column: { name: ship_street, type: varchar(255) }
+              - column: { name: ship_city, type: varchar(255) }
+              - column: { name: ship_postal_code, type: varchar(255) }
+              - column: { name: ship_country, type: varchar(255) }
+              - column: { name: bill_street, type: varchar(255) }
+              - column: { name: bill_city, type: varchar(255) }
+              - column: { name: bill_postal_code, type: varchar(255) }
+              - column: { name: bill_country, type: varchar(255) }
+              - column: { name: items_total, type: "numeric(19,2)", constraints: { nullable: false } }
+              - column: { name: delivery_cost, type: "numeric(19,2)", constraints: { nullable: false } }
+              - column: { name: grand_total, type: "numeric(19,2)", constraints: { nullable: false } }
+              - column: { name: currency, type: varchar(3), constraints: { nullable: false } }
+              - column: { name: version, type: bigint, constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamp with time zone }
+              - column: { name: updated_at, type: timestamp with time zone }
+        - createIndex:
+            tableName: orders
+            indexName: idx_orders_user_created
+            columns:
+              - column: { name: user_id }
+              - column: { name: created_at }
