@@ -1,0 +1,13 @@
+{
+  "cart": {
+    "id": "%s",
+    "userId": "%s",
+    "status": "ACTIVE",
+    "items": [],
+    "itemCount": 0,
+    "totalAmount": 0,
+    "currency": "PLN"
+  },
+  "changed": false,
+  "changes": []
+}

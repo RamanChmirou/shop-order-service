@@ -2,6 +2,7 @@ package com.kanapa4.shop.order.adapter;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.http.Fault;
+import com.kanapa4.shop.order.adapter.util.TestFileUtils;
 import com.kanapa4.shop.order.model.CartSnapshot;
 import com.kanapa4.shop.order.model.exception.CartServiceUnavailableException;
 import com.kanapa4.shop.order.model.exception.EmptyCartException;
@@ -111,26 +112,5 @@ class CartPortAdapterTest {
                 .isInstanceOf(CartServiceUnavailableException.class);
     }
 
-    private static final String CART_JSON = """
-            {
-              "cart": {
-                "id": "22222222-2222-2222-2222-222222222222",
-                "userId": "11111111-1111-1111-1111-111111111111",
-                "status": "ACTIVE",
-                "items": [{
-                  "id": "33333333-3333-3333-3333-333333333333",
-                  "productId": "44444444-4444-4444-4444-444444444444",
-                  "productName": "Laptop",
-                  "unitPrice": {"amount": 100.00, "currency": "PLN", "vatRate": "VAT_23"},
-                  "quantity": 2,
-                  "lineTotal": {"amount": 200.00, "currency": "PLN", "vatRate": "VAT_23"},
-                  "selectedOptions": []
-                }],
-                "itemCount": 2,
-                "totalAmount": 200.00,
-                "currency": "PLN"
-              },
-              "changed": false
-            }
-            """;
+    private static final String CART_JSON = TestFileUtils.readJson("stubs/cart-reprice.json");
 }

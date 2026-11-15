@@ -2,6 +2,7 @@ package com.kanapa4.shop.order.adapter;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.jayway.jsonpath.JsonPath;
+import com.kanapa4.shop.order.adapter.util.TestFileUtils;
 import com.kanapa4.shop.order.domain.port.OrderRepositoryPort;
 import com.kanapa4.shop.order.model.Order;
 import com.kanapa4.shop.order.model.exception.OrderConcurrentModificationException;
@@ -37,6 +38,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.StreamSupport;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
@@ -292,48 +294,22 @@ class OrderApiIntegrationTest {
         return objectMapper.writeValueAsString(request);
     }
 
+    private static final String CART_TEMPLATE = TestFileUtils.readJson("stubs/cart-reprice-template.json");
+    private static final String EMPTY_CART_TEMPLATE = TestFileUtils.readJson("stubs/cart-empty-reprice-template.json");
+
     private String repriceUrl(UUID userId) {
         return "/carts/" + userId + "/reprice";
     }
 
     private void stubCart(UUID userId, int quantity) {
-        wireMock.stubFor(post(urlPathEqualTo(repriceUrl(userId))).willReturn(okJson("""
-                {
-                  "cart": {
-                    "id": "%s",
-                    "userId": "%s",
-                    "status": "ACTIVE",
-                    "items": [{
-                      "id": "%s",
-                      "productId": "%s",
-                      "productName": "Laptop Pro 15",
-                      "unitPrice": {"amount": 5199.00, "currency": "PLN", "vatRate": "VAT_23"},
-                      "quantity": %d,
-                      "lineTotal": {"amount": 10398.00, "currency": "PLN", "vatRate": "VAT_23"},
-                      "selectedOptions": [
-                        {"groupCode": "RAM", "valueCode": "RAM_32", "valueLabel": "32 GB", "priceDelta": 400.00}
-                      ]
-                    }],
-                    "itemCount": %d,
-                    "totalAmount": 10398.00,
-                    "currency": "PLN"
-                  },
-                  "changed": false,
-                  "changes": []
-                }
-                """.formatted(UUID.randomUUID(), userId, UUID.randomUUID(), UUID.randomUUID(),
+        wireMock.stubFor(post(urlPathEqualTo(repriceUrl(userId))).willReturn(okJson(
+                CART_TEMPLATE.formatted(UUID.randomUUID(), userId, UUID.randomUUID(), UUID.randomUUID(),
                 quantity, quantity))));
     }
 
     private void stubEmptyCart(UUID userId) {
-        wireMock.stubFor(post(urlPathEqualTo(repriceUrl(userId))).willReturn(okJson("""
-                {
-                  "cart": {"id": "%s", "userId": "%s", "status": "ACTIVE", "items": [],
-                           "itemCount": 0, "totalAmount": 0, "currency": "PLN"},
-                  "changed": false,
-                  "changes": []
-                }
-                """.formatted(UUID.randomUUID(), userId))));
+        wireMock.stubFor(post(urlPathEqualTo(repriceUrl(userId))).willReturn(okJson(
+                EMPTY_CART_TEMPLATE.formatted(UUID.randomUUID(), userId))));
     }
 
     private String awaitEventFor(String orderId) {
@@ -347,10 +323,12 @@ class OrderApiIntegrationTest {
             consumer.subscribe(List.of(TOPIC));
             Instant deadline = Instant.now().plusSeconds(20);
             while (Instant.now().isBefore(deadline)) {
-                for (ConsumerRecord<String, String> record : consumer.poll(Duration.ofMillis(500))) {
-                    if (orderId.equals(record.key())) {
-                        return record.value();
-                    }
+                var found = StreamSupport.stream(consumer.poll(Duration.ofMillis(500)).spliterator(), false)
+                        .filter(record -> orderId.equals(record.key()))
+                        .map(ConsumerRecord::value)
+                        .findFirst();
+                if (found.isPresent()) {
+                    return found.get();
                 }
             }
         }
